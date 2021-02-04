@@ -3,12 +3,10 @@ var fs               = require("fs");
 var LINQ = require("node-linq").LINQ;
 var multer  = require('multer')
 var upload = multer({ dest: 'uploads/' })
-var shajs = require('sha.js');
+var sha256 = require('js-sha256');
    
 const app = express();
 app.use(express.static(__dirname));
-
-var key = "";
    
 // создаем парсер для данных в формате json
 const jsonParser = express.json();
@@ -200,19 +198,22 @@ app.post("/login_key", jsonParser, function(request, response){
     {
         forReturn += possible.charAt(Math.floor(Math.random() * possible.length));
     }
-    //key = forReturn;
-    console.log(forReturn);
+    fs.writeFileSync("data/key.json", forReturn);
     response.json(forReturn);
 })
 
 app.post("/login", jsonParser, function(request, response){
     let rawdata = fs.readFileSync("data/Users.json", 'utf-8');
     let database = JSON.parse(rawdata);
+    let key = fs.readFileSync("data/key.json", "utf-8");
     for (var i = 0; i < database.length; i++)
     {
-        if (shajs('sha256').update(key + database[i].email + database[i].password).digest('hex') == request.body.result)
+        var forCheck = sha256(key + database[i].email + database[i].password);
+        console.log(forCheck);
+        if (forCheck == request.body.result)
         {
-            key == "";
+            console.log(forCheck);
+            fs.writeFileSync("data/key.json", "");
             response.json({"id": database[i].id, "status": database[i].status});
             return;
         }
